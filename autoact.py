@@ -1,8 +1,10 @@
 from docx import Document
 import pandas as pd
 import pymorphy3
+from datetime import datetime
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-morph = pymorphy3.MorphAnalyzer()
+morph = pymorphy3.MorphAnalyzer()  
 
 def extend_date(date):
     months = [
@@ -10,8 +12,8 @@ def extend_date(date):
         "мая", "июня", "июля", "августа",
         "сентября", "октября", "ноября", "декабря"
     ]
-    parts = date.split('-')
-    return f"« {parts[2].split(' ')[0]} » {months[int(parts[1])-1]} {parts[0]} г."
+    parts = date.split('.')
+    return f"« {parts[0]} » {months[int(parts[1])-1]} {parts[2]} г."
 
 def to_genitive_name(full_name):
     parts = full_name.strip().split()
@@ -124,11 +126,12 @@ for index, row in table.iterrows():
     department = row['Отдел']
     gent_department = to_genitive_dep(department)
     control = row['Управление']
-    date=str(row['Дата'])
+    date_obj = row['Дата']
+    date = row['Дата'].strftime('%d.%m.%Y')
     extended_date=extend_date(date)
+    
     room=row['Помещение']
     adress = row['Адрес']
-
     comp_name = row['Наименование ЭВМ']
     serial_number = row['S/N ЭВМ']
     ip = row['IP-адрес']
@@ -153,12 +156,13 @@ for index, row in table.iterrows():
     info=cell.text
     info=info.replace(f"{{extended_date}}",extended_date)
     cell.text = info
+    cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
     paragraph = doc.paragraphs[4]
     info = paragraph.text
     info=info.replace(f"{{name}}",name
         ).replace(f"{{job_title}}",job_title
-        ).replace(f"{{department}}",department
+        ).replace(f"{{department}}",gent_department
         ).replace(f"{{date}}",date
         ).replace(f"{{room}}",room 
         ).replace(f"{{adress}}",adress
@@ -267,40 +271,5 @@ for index, row in table.iterrows():
     info=info.replace(f"{{boss}}",boss)
     table.rows[0].cells[2].paragraphs[0].text=info
 
-    doc.save(f"Заявка_{name}.docx")
+    #doc.save(f"Заявка_{name}.docx")
     print(f"Документы на {name} готовы")
-    
-    
-
-
-'''
-number = input("серийный номер: ")
-name = input("имя: ")
-
-doc = Document('Акт.docx')
-
-paragraph = doc.paragraphs[0]
-info = paragraph.text
-
-info = insert_string(info, number + " ", info.find("номер") + 6)
-info = insert_string(info, " " + name, info.find("пользователя") + 12)
-
-paragraph.text = info
-
-doc.save(f"Акт_{name}.docx")
-
-print("Акт составлен")
-
-doc = Document('Заявка.docx')
-
-table = doc.add_table(rows=2, cols=2)
-
-table.cell(0,0).text = "Серийный номер АРМ"
-table.cell(0,1).text = number
-table.cell(1,0).text = "ФИО Пользователя"
-table.cell(1,1).text = name
-
-doc.save(f"Заявка_{name}.docx")
-
-print("Заявка составлена")
-'''
