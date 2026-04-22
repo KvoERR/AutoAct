@@ -300,21 +300,40 @@ class AutoAct:
         doc.save(f"Заявка_{self.name}.docx")
     def generate_csp(self):
         doc = Document('CSP уничтожение.docx')
-        paragraph = doc.paragraphs[0]
+        paragraph = doc.paragraphs[8]
         info = paragraph.text
         info=info.replace(f"{{act_number}}",self.act_number)
         paragraph.text = info
+
+        paragraph = doc.paragraphs[11]
+        info = paragraph.text
+        info=info.replace(f"{{extended_date}}",self.extended_date)
+        paragraph.text = info
+
+        paragraph = doc.paragraphs[13]
+        info = paragraph.text
+        info=info.replace(f"{{id_vipnet}}",self.id_vipnet
+            ).replace(f"{{job_title}}",self.job_title
+            ).replace(f"{{serial_number}}",self.serial_number
+            ).replace(f"{{disk_number}}",self.disk_number
+            ).replace(f"{{short_name}}",self.short_name
+            ).replace(f"{{job_title}}",self.job_title
+            ).replace(f"{{department}}",self.gent_department            
+            )                    
+        paragraph.text=info
+
+        paragraph = doc.paragraphs[22]
+        info = paragraph.text
+        info=info.replace(f"{{extended_date}}",self.extended_date)
+        paragraph.text = info
+
+        doc.save(f"CSP уничтожение_{self.name}.docx")
     def table_processing(self):
         for index, row in self.table.iterrows():
             self.parce_cells(row)
             self.generate_act()
             self.generate_bid()
-            #self.generate_csp()
-
-            
-
-
-
+            self.generate_csp()
             print(f"Документы на {self.name} готовы")
 
 if __name__ == '__main__':
