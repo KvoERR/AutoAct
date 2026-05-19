@@ -139,8 +139,10 @@ def shorten_name(full_name):
     return f"{last_name} {first_name_initial}{patronymic_initial}"
 
 class AutoAct:
-    def __init__(self):
-        self.table = pd.read_excel('Инфо.xlsx')
+    def __init__(self,file_path,options):
+        self.table = pd.read_excel(file_path)
+        self.options = options
+        self.catalog = "samples"
         
     def parce_cells(self, row):
         self.act_number = str(row['Номер акта'])
@@ -148,6 +150,7 @@ class AutoAct:
         self.gent_name=to_genitive_name(self.name)
         self.inst_name=to_inst_name(self.name)
         self.short_name=shorten_name(self.name)
+        self.snils = row
         self.job_title = row['Должность']
         self.department = row['Отдел']
         self.gent_department = to_genitive_dep(self.department)
@@ -170,171 +173,34 @@ class AutoAct:
         self.sticker_number = str(row['Номер стикера'])
 
         self.boss=row['Начальник']
-    def generate_act(self):
-        doc = Document('Акт.docx')
+    
+    def replace_in_doc(self, doc):
+        for paragraph in doc.paragraphs:
+            if '{' in paragraph.text:  # Только если есть потенциальные плейсхолдеры
+                for key, value in self.__dict__.items():
+                    if f"{{{key}}}" in paragraph.text:
+                        paragraph.text = paragraph.text.replace(f"{{{key}}}", str(value))
 
-        paragraph = doc.paragraphs[0]
-        info = paragraph.text
-        info=info.replace(f"{{act_number}}",self.act_number)
-        paragraph.text = info
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    self.replace_in_doc(cell)
 
-        cell = doc.tables[1].rows[0].cells[1]
-        info=cell.text
-        info=info.replace(f"{{extended_date}}",self.extended_date)
-        cell.text = info
-        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-
-        paragraph = doc.paragraphs[4]
-        info = paragraph.text
-        info=info.replace(f"{{name}}",self.name
-            ).replace(f"{{job_title}}",self.job_title
-            ).replace(f"{{department}}",self.gent_department
-            ).replace(f"{{date}}",self.date
-            ).replace(f"{{room}}",self.room 
-            ).replace(f"{{adress}}",self.adress
-            ).replace(f"{{serial_number}}",self.serial_number
-            ).replace(f"{{disk_number}}",self.disk_number
-            ).replace(f"{{gent_name}}",self.gent_name
-            )                    
-        paragraph.text=info
-
-        paragraph = doc.paragraphs[6]
-        info = paragraph.text
-        paragraph.runs[7].text=self.id_vipnet
-
-        paragraph = doc.paragraphs[11]
-        info = paragraph.text
-        info=info.replace(f"{{gent_name}}",self.gent_name)
-        paragraph.text=info
-
-        paragraph = doc.paragraphs[12]
-        info = paragraph.text
-        info=info.replace(f"{{room}}",self.room
-        ).replace(f"{{crypto_number}}",self.crypto_number
-        ).replace(f"{{date}}",self.date)
-        paragraph.text=info
-            
-        paragraph = doc.paragraphs[14]
-        info = paragraph.text
-        paragraph.runs[5].text=self.sticker_number
-        paragraph.runs[7].text=self.inst_name
-
-        table=doc.tables[2]
-        info=table.rows[0].cells[0].paragraphs[5].text
-        info=info.replace(f"{{extended_date}}",self.extended_date)
-        table.rows[0].cells[0].paragraphs[5].text=info
-
-        table=doc.tables[2]
-        info=table.rows[0].cells[1].paragraphs[0].text
-        info=info.replace(f"{{gent_department}}",self.gent_department)
-        table.rows[0].cells[1].paragraphs[0].text=info
-
-        table=doc.tables[2]
-        info=table.rows[0].cells[1].paragraphs[3].text
-        info=info.replace(f"{{short_name}}",self.short_name)
-        table.rows[0].cells[1].paragraphs[3].text=info
-
-        table=doc.tables[2]
-        info=table.rows[0].cells[1].paragraphs[4].text
-        info=info.replace(f"{{extended_date}}",self.extended_date)
-        table.rows[0].cells[1].paragraphs[4].text=info
-
-        doc.save(f"Акт_{self.name}.docx")
-    def generate_bid(self):
-        doc = Document('Заявка.docx')
-
-        table=doc.tables[0]
-
-        info=table.rows[0].cells[2].text
-        info=info.replace(f"{{name}}",self.name)
-        table.rows[0].cells[2].text=info
-
-        info=table.rows[1].cells[2].text
-        jt1=self.job_title.capitalize()
-        info=info.replace(f"{{job_title}}",jt1)
-        table.rows[1].cells[2].text=info
-
-        info=table.rows[2].cells[2].text
-        info=info.replace(f"{{department}}",self.department)
-        table.rows[2].cells[2].text=info
-
-        info=table.rows[3].cells[2].text
-        info=info.replace(f"{{control}}",self.control)
-        table.rows[3].cells[2].text=info
-
-        info=table.rows[4].cells[2].text
-        info=info.replace(f"{{adress}}",self.adress
-        ).replace(f"{{room}}",self.room)
-        table.rows[4].cells[2].text=info
-
-        info=table.rows[5].cells[2].text
-        info=info.replace(f"{{comp_name}}",self.comp_name)
-        table.rows[5].cells[2].text=info
-
-        info=table.rows[6].cells[2].text
-        info=info.replace(f"{{serial_number}}",self.serial_number)
-        table.rows[6].cells[2].text=info
-
-        info=table.rows[7].cells[2].text
-        info=info.replace(f"{{ip}}",self.ip)
-        table.rows[7].cells[2].text=info
-
-        info=table.rows[8].cells[2].text
-        info=info.replace(f"{{disk_number}}",self.disk_number)
-        table.rows[8].cells[2].text=info
-
-        info=table.rows[9].cells[2].text
-        info=info.replace(f"{{os}}",self.os)
-        table.rows[9].cells[2].text=info
-
-        info=table.rows[10].cells[2].text
-        info=info.replace(f"{{sticker_number}}",self.sticker_number)
-        table.rows[10].cells[2].text=info
-
-        table=doc.tables[1]
-
-        info=table.rows[0].cells[2].paragraphs[0].text
-        info=info.replace(f"{{boss}}",self.boss)
-        table.rows[0].cells[2].paragraphs[0].text=info
-
-        doc.save(f"Заявка_{self.name}.docx")
-    def generate_csp(self):
-        doc = Document('CSP уничтожение.docx')
-        paragraph = doc.paragraphs[8]
-        info = paragraph.text
-        info=info.replace(f"{{act_number}}",self.act_number)
-        paragraph.text = info
-
-        paragraph = doc.paragraphs[11]
-        info = paragraph.text
-        info=info.replace(f"{{extended_date}}",self.extended_date)
-        paragraph.text = info
-
-        paragraph = doc.paragraphs[13]
-        info = paragraph.text
-        info=info.replace(f"{{id_vipnet}}",self.id_vipnet
-            ).replace(f"{{job_title}}",self.job_title
-            ).replace(f"{{serial_number}}",self.serial_number
-            ).replace(f"{{disk_number}}",self.disk_number
-            ).replace(f"{{short_name}}",self.short_name
-            ).replace(f"{{job_title}}",self.job_title
-            ).replace(f"{{department}}",self.gent_department            
-            )                    
-        paragraph.text=info
-
-        paragraph = doc.paragraphs[22]
-        info = paragraph.text
-        info=info.replace(f"{{extended_date}}",self.extended_date)
-        paragraph.text = info
-
-        doc.save(f"CSP уничтожение_{self.name}.docx")
+    def generate_doc(self,name1,name2):
+        doc = Document(f'{self.catalog}/{name1}.docx')
+        self.replace_in_doc(doc)
+        doc.save(f"{self.name} {name2}.docx")
+    
     def table_processing(self):
         for index, row in self.table.iterrows():
             self.parce_cells(row)
-            self.generate_act()
-            self.generate_bid()
-            self.generate_csp()
-            print(f"Документы на {self.name} готовы")
+            if self.options["act"]:
+                self.generate_doc('act','CSP акт')
+            if self.options["bid"]:
+                self.generate_doc('bid','CSP заяка')
+            if self.options["csp"]:
+                self.generate_doc('csp','CSP уничтожение')
+            yield (f"Документы на {self.name} готовы")
 
 if __name__ == '__main__':
     autoact=AutoAct()
