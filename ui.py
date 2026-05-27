@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
+from tkinter import messagebox 
 import pandas as pd
 from autoact import AutoAct
 
@@ -181,11 +182,13 @@ class App:
         self.template_path_entry = tk.Entry(path_frame, width=100, state='readonly', font=("Arial", 10))
         self.template_path_entry.grid(row=0, column=1, padx=5)
         tk.Button(path_frame, text="Обзор", command=self.select_template_folder).grid(row=0, column=2, padx=5)
+        tk.Button(path_frame, text="?", command=self.show_template_help).grid(row=0, column=3, padx=5)
 
         tk.Label(path_frame, text="Таблица замен:", font=("Arial", 10)).grid(row=1, column=0, sticky='w')
         self.table_path_entry = tk.Entry(path_frame, width=100, state='readonly', font=("Arial", 10))
         self.table_path_entry.grid(row=1, column=1, padx=5)
         tk.Button(path_frame, text="Обзор", command=self.select_table_file).grid(row=1, column=2, padx=5)
+        tk.Button(path_frame, text="?", command=self.show_table_help).grid(row=1, column=3, padx=5)
 
         self.status_label = tk.Label(parent, text="", fg="gray", font=("Arial", 9))
         self.status_label.pack(anchor='w', padx=20, pady=0)
@@ -199,22 +202,16 @@ class App:
 
         # Создание таблиц доп. ф-ий
         self.f1 = self.Feature(tables_frame, "Слово в Р.п.", 0, "Слово", "Р.п.")
-        self.f1.insert("{department}", "{gent_department}")
 
         self.f2 = self.Feature(tables_frame, "Имя в Р.п.", 1, "Имя", "Р.п.")
-        self.f2.insert("{name}", "{gent_name}")
 
         self.f3 = self.Feature(tables_frame, "Имя в Д.п.", 2, "Имя", "Д.п.")
-        self.f3.insert("{name}", "{inst_name}")
 
         self.f4 = self.Feature(tables_frame, "Сокращенное имя", 3, "Имя", "Сокращённое")
-        self.f4.insert("{name}", "{short_name}")
 
         self.f5 = self.Feature(tables_frame, "Сокращённая дата", 4, "Дата", "Сокращённая")
-        self.f5.insert("{date}", "{short_date}")
 
         self.f6 = self.Feature(tables_frame, "Расширенная дата", 5, "Дата", "Расширенная")
-        self.f6.insert("{date}", "{extended_date}")
 
         self.f1.insert()
         self.f2.insert()
@@ -246,6 +243,19 @@ class App:
             font=("Arial", 10)
         )
         self.log_text.pack(fill='both', expand=True)
+
+    def show_template_help(self):
+        messagebox.showinfo(
+            "Шаблоны", 
+            "Выберите папку, содержащую файлы .docx, которые будут использоваться как шаблоны."
+        )
+
+    def show_table_help(self):
+        messagebox.showinfo(
+            "Таблица замен", 
+            "Выберите Excel-файл (.xlsx), где каждая строка — данные для нового документа.\n"
+            "Колонки: name, date и др."
+        )
 
     def select_table_file(self):
         file_path = filedialog.askopenfilename(
