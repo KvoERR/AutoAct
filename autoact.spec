@@ -1,18 +1,25 @@
-# -*- mode: python ; coding: utf-8 -*-
-
 block_cipher = None
 
 a = Analysis(
-    ['autoact.py'],
+    ['ui.py'],
     pathex=[],
     binaries=[],
     datas=[
-        ('Инфо.xlsx', '.'),
-        ('Акт.docx', '.'),
-        ('Заявка.docx', '.'),
-        ('CSP уничтожение.docx', '.')
+        ('samples', 'samples'),
     ],
-    hiddenimports=[],
+    hiddenimports=[
+        'pandas',
+        'pandas._libs.tslibs.timedeltas',
+        'openpyxl',
+        'openpyxl.styles',
+        'openpyxl.utils',
+        'docx',
+        'python_docx',
+        'pymorphy3',
+        'pymorphy3_dicts',
+        'morfologik',
+        'morfologik.stemmer',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -32,18 +39,18 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='autoact',
+    name='AutoAct', 
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=True, 
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,
+    icon=None
 )

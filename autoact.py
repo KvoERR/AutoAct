@@ -1,8 +1,6 @@
+import os
 from docx import Document
-import pandas as pd
 import pymorphy3
-from datetime import datetime
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 morph = pymorphy3.MorphAnalyzer()  
 
@@ -12,8 +10,24 @@ def extend_date(date):
         "мая", "июня", "июля", "августа",
         "сентября", "октября", "ноября", "декабря"
     ]
-    parts = date.split('.')
-    return f"« {parts[0]} » {months[int(parts[1])-1]} {parts[2]} г."
+    
+    # Проверяем, что это Timestamp или datetime
+    if hasattr(date, 'year') and hasattr(date, 'month') and hasattr(date, 'day'):
+        day = date.day
+        month = date.month
+        year = date.year
+    else:
+        # На всякий случай — fallback
+        date_str = str(date).strip()
+        if '-' in date_str:
+            year, month, day = map(int, date_str.split()[0].split('-'))
+        else:
+            raise ValueError(f"Неподдерживаемый формат даты: {date}")
+
+    return f"« {day} » {months[month - 1]} {year} г."
+
+def shorten_date(date):
+    return date.strftime('%d.%m.%Y')
 
 def to_genitive_name(full_name):
     parts = full_name.strip().split()
@@ -72,10 +86,10 @@ def to_genitive_name(full_name):
 
     return f"{last_g} {first_g} {patronymic_g}"
 
-def to_genitive_dep(dep):
-    words = dep.strip().split()
+def to_genitive_word(word):
+    words = word.strip().split()
     if not words:
-        return dep
+        return word
 
     first_word = words[0]
     rest_words = words[1:]
@@ -139,69 +153,84 @@ def shorten_name(full_name):
     return f"{last_name} {first_name_initial}{patronymic_initial}"
 
 class AutoAct:
-    def __init__(self,file_path,options):
-        self.table = pd.read_excel(file_path)
-        self.options = options
-        self.catalog = "samples"
-        
-    def parce_cells(self, row):
-        self.act_number = str(row['Номер акта'])
-        self.name=row['Имя']
-        self.gent_name=to_genitive_name(self.name)
-        self.inst_name=to_inst_name(self.name)
-        self.short_name=shorten_name(self.name)
-        self.snils = row
-        self.job_title = row['Должность']
-        self.department = row['Отдел']
-        self.gent_department = to_genitive_dep(self.department)
-        self.control = row['Управление']
-        self.date_obj = row['Дата']
-        self.date = row['Дата'].strftime('%d.%m.%Y')
-        self.extended_date=extend_date(self.date)
-        
-        self.room=row['Помещение']
-        self.adress = row['Адрес']
-        self.comp_name = row['Наименование ЭВМ']
-        self.serial_number = row['S/N ЭВМ']
-        self.ip = row['IP-адрес']
-        self.disk_number = row['Номер диска']
-        self.os=row['ОС']
+    def __init__(self,template_path, changes, features):
+        self.changes = changes
+        self.features = features
+        self.catalog = template_path
 
-        self.id_vipnet = row['ID VipNet']
-        self.crypto_number = str(row['Номер криптосредства'])
-        self.crypto_date = row['Дата криптосредства']
-        self.sticker_number = str(row['Номер стикера'])
-
-        self.boss=row['Начальник']
+        self.apply_features()
     
-    def replace_in_doc(self, doc):
+    def extend_changes(self,name,key,base):
+        "Добавляет измененные features в changes"
+        if name == "Слово в Р.п.":
+            for change in self.changes:
+                change[key]=to_genitive_word(change[base])
+        elif name == "Имя в Р.п.":
+            for change in self.changes:
+                change[key]=to_genitive_name(change[base])
+        elif name == "Имя в Д.п.":
+            for change in self.changes:
+                change[key]=to_inst_name(change[base])
+        elif name == "Сокращенное имя":
+            for change in self.changes:
+                change[key]=shorten_name(change[base])
+        elif name == "Сокращённая дата":
+            for change in self.changes:
+                change[key]=shorten_date(change[base]) 
+        elif name == "Расширенная дата":
+            for change in self.changes:
+                change[key]=extend_date(change[base]) 
+
+
+    def apply_features(self):
+        "Проходимся по features и расширяем changes"
+        for feature in self.features:
+            name = feature.get('name')
+            rules = feature.get('data', {})
+            for base, key in rules.items():
+                self.extend_changes(name,key,base)
+                
+
+    def replace_in_doc(self, doc, change):
+        def do_replace(paragraph):
+            for key, value in change.items():
+                if key in paragraph.text:
+                    paragraph.text = paragraph.text.replace(key, str(value))
+
         for paragraph in doc.paragraphs:
-            if '{' in paragraph.text:  # Только если есть потенциальные плейсхолдеры
-                for key, value in self.__dict__.items():
-                    if f"{{{key}}}" in paragraph.text:
-                        paragraph.text = paragraph.text.replace(f"{{{key}}}", str(value))
+            do_replace(paragraph)
 
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
-                    self.replace_in_doc(cell)
-
-    def generate_doc(self,name1,name2):
-        doc = Document(f'{self.catalog}/{name1}.docx')
-        self.replace_in_doc(doc)
-        doc.save(f"{self.name} {name2}.docx")
+                    for paragraph in cell.paragraphs:
+                        do_replace(paragraph)
     
     def table_processing(self):
-        for index, row in self.table.iterrows():
-            self.parce_cells(row)
-            if self.options["act"]:
-                self.generate_doc('act','CSP акт')
-            if self.options["bid"]:
-                self.generate_doc('bid','CSP заяка')
-            if self.options["csp"]:
-                self.generate_doc('csp','CSP уничтожение')
-            yield (f"Документы на {self.name} готовы")
+        iter = 1
+        for filename in os.listdir(self.catalog):
+            if filename.endswith('.docx') and not filename.startswith('~$'):
+                filepath = os.path.join(self.catalog, filename)
+                
+                try:
+                    for change in self.changes:
+                        doc = Document(filepath)
+                        self.replace_in_doc(doc, change)
+
+                        # Генерация имени файла
+                        name_value = change.get('{name}', f"объект_{iter}")
+                        base_name = os.path.splitext(filename)[0]
+                        safe_name = "".join(c for c in name_value if c.isalnum() or c in " _-")[:50]
+                        output_filename = f"{base_name} {safe_name}.docx"
+
+                        doc.save(output_filename)
+                        yield f"✅ {output_filename}"
+                        iter += 1
+
+                except Exception as e:
+                    yield f"❌ Ошибка при обработке {filename}: {str(e)}"
+
 
 if __name__ == '__main__':
     autoact=AutoAct()
-    autoact.table_processing()
+    #autoact.table_processing()
