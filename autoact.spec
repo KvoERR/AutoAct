@@ -4,9 +4,7 @@ a = Analysis(
     ['ui.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('samples', 'samples'),
-    ],
+    datas=[],
     hiddenimports=[
         'pandas',
         'pandas._libs.tslibs.timedeltas',
