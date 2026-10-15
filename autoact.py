@@ -156,8 +156,14 @@ class Functions:
         return f"{last_name} {first_name_initial}{patronymic_initial}"
 
 class AutoAct(ABC):
-    @abstractmethod
-    def run(self, data: dict) -> dict:
+    def __init__(self, data: str, templates: str, changes: str, features: str) -> dict:
+        self.data = data
+        self.template = templates
+        self.changes = changes
+        self.features = features
+
+        print(self.__dict__)
+    
         """Выполнить обработку и вернуть результат."""
     '''def __init__(self, data_path, template_path, changes, features):
         self.data_dir = data_path
@@ -239,18 +245,22 @@ class AutoAct(ABC):
 '''
 
 class ManualMode(AutoAct):
+    def __init__(self, data: str, templates: str, changes: str, features: str) -> dict:
+        self.data = data
+        self.template = templates
+        self.changes = changes
+        self.features = features
     
-    def run(self, data: dict) -> dict:
-        print("Ручной режим")
-        # ваша логика
-        return data
+        print(self.__dict__)
 
 class AutoMode(AutoAct):
+    def __init__(self, data: str, templates: str, changes: str, features: str) -> dict:
+        self.data = data
+        self.template = templates
+        self.changes = changes
+        self.features = features
 
-    def run(self, data: dict) -> dict:
-        print("Автоматический режим")
-        # ваша логика
-        return data
+        print(self.__dict__)
 
 if __name__ == '__main__':
     autoact=AutoAct()
