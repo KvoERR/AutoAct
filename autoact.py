@@ -212,6 +212,7 @@ class ManualMode(AutoAct):
 
             doc = Document(filepath)
             for change in self.changes:
+                doc = Document(filepath)
                 self.extend_change(change)
                 self.apply_change(doc, change)
 
