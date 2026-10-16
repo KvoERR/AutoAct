@@ -156,13 +156,18 @@ class Functions:
         return f"{last_name} {first_name_initial}{patronymic_initial}"
 
 class AutoAct(ABC):
-    def __init__(self, data: str, templates: str, changes: str, features: str) -> dict:
+    def __init__(self, filename: str, data: str, templates: str, changes: str, features: str) -> dict:
+        self.filename = filename
         self.data = data
         self.template = templates
         self.changes = changes
         self.features = features
 
         print(self.__dict__)
+
+    @abstractmethod
+    def run(self):
+        ...
     
         """Выполнить обработку и вернуть результат."""
     '''def __init__(self, data_path, template_path, changes, features):
@@ -245,22 +250,38 @@ class AutoAct(ABC):
 '''
 
 class ManualMode(AutoAct):
-    def __init__(self, data: str, templates: str, changes: str, features: str) -> dict:
-        self.data = data
-        self.template = templates
-        self.changes = changes
-        self.features = features
-    
-        print(self.__dict__)
+    def run(self):
+        iter = 1
+        for template in os.listdir(self.templates):
+            if not template.endswith('.docx') or template.startswith('~$'):
+                continue
+
+            filepath = os.path.join(self.templates, template)
+            base_name = os.path.splitext(template)[0]
+
+            for change in self.changes:
+                try:
+                    doc = Document(filepath)
+                    self.replace_in_doc(doc, change)
+
+                    name_value = change.get(self.filename, '').strip() or f"объект_{iter}"
+                    safe_name = "".join(
+                        c for c in name_value if c.isalnum() or c in " _-"
+                    )[:50].strip() or f"объект_{iter}"
+
+                    output_filename = f"{base_name} {safe_name}.docx"
+                    doc.save(output_filename)
+
+                    yield f"✅ {output_filename}"
+                    iter += 1
+
+                except Exception as e:
+                    yield f"❌ Ошибка ({template}, строка {iter}): {e}"
+                    iter += 1
 
 class AutoMode(AutoAct):
-    def __init__(self, data: str, templates: str, changes: str, features: str) -> dict:
-        self.data = data
-        self.template = templates
-        self.changes = changes
-        self.features = features
-
-        print(self.__dict__)
+    def run(self):
+        ...
 
 if __name__ == '__main__':
     autoact=AutoAct()
