@@ -1,12 +1,14 @@
 Traceback (most recent call last):
-  File "c:\Xtorage\KvoERR\AutoAct\app.py", line 76, in <module>
+  File "c:\Xtorage\KvoERR\AutoAct\app.py", line 75, in <module>
     main()
   File "c:\Xtorage\KvoERR\AutoAct\app.py", line 68, in main
     autoact = entry["mode"](filename, data, templates, changes, features)
-  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 183, in __init__
+  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 174, in __init__
     self.apply_features()
-  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 197, in apply_features
+  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 188, in apply_features
     self.extend_changes(before_temp,feat,after_temp)
-  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 188, in extend_changes
-    if change[before_temp]:
-KeyError: '{date}'
+  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 180, in extend_changes
+    change[after_temp]=FEATURES[feat](change[before_temp])
+  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 27, in extend_date
+    raise ValueError(f"Неподдерживаемый формат даты: {date}")
+ValueError: Неподдерживаемый формат даты: Дата рождения

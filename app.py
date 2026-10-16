@@ -62,12 +62,11 @@ def main():
     entry = MODES[mode_name]
 
     filename = reader.get_file_name("Программа")
-    data,templates = reader.get_import("Данные")
+    data,templates = reader.get_import("Программа")
     changes = reader.get_changes(entry["sheet"])
     features = reader.get_features("Функции")
     autoact = entry["mode"](filename, data, templates, changes, features)
     autoact.run()
-
 
 if __name__ == "__main__":
     log_path = Path(__file__).parent / "error.log"

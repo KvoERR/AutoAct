@@ -178,39 +178,29 @@ class AutoAct(ABC):
         raise
 
 class ManualMode(AutoAct):
-    def __init__(self, filename, data, templates, changes, features):
-        super().__init__(filename, data, templates, changes, features)
-        self.apply_features()
-        print(changes)
-
-    def extend_changes(self,before_temp,feat,after_temp):
-        for change in self.changes:
-            if change.get(before_temp):
-                change[after_temp]=FEATURES[feat](change[before_temp])
-
-    def apply_features(self):
-        "Проходимся по features и расширяем changes"
+    def extend_change(self,change):
         for feature in self.features:
             before_temp = feature.get('Исходный шаблон')
             feat = feature.get('Функция')
             after_temp = feature.get('Обработанный шаблон')
-            self.extend_changes(before_temp,feat,after_temp)
+            if change.get(before_temp):
+                change[after_temp]=FEATURES[feat](change[before_temp])
  
-    def replace_in_doc(self, doc, change):
-            def do_replace(paragraph):
-                for key, value in change.items():
-                    if key in paragraph.text:
-                        paragraph.text = paragraph.text.replace(key, str(value))
-    
-            for paragraph in doc.paragraphs:
-                do_replace(paragraph)
-    
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        for paragraph in cell.paragraphs:
-                            do_replace(paragraph)
+    def apply_change(self, doc, change):
+        def do_replace(paragraph):
+            for key, value in change.items():
+                if key in paragraph.text:
+                    paragraph.text = paragraph.text.replace(key, str(value))
 
+        for paragraph in doc.paragraphs:
+            do_replace(paragraph)
+        
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        do_replace(paragraph)
+                    
     def run(self):     
         iter = 0
         for template in os.listdir(self.templates):
@@ -220,9 +210,10 @@ class ManualMode(AutoAct):
             filepath = os.path.join(self.templates, template)
             base_name = os.path.splitext(template)[0]
 
+            doc = Document(filepath)
             for change in self.changes:
-                doc = Document(filepath)
-                self.replace_in_doc(doc, change)
+                self.extend_change(change)
+                self.apply_change(doc, change)
 
                 name_value = change.get(self.filename, '').strip() or f"объект_{iter+1}"
                 safe_name = "".join(
@@ -233,8 +224,6 @@ class ManualMode(AutoAct):
                 doc.save(output_filename)
 
                 iter += 1     
-
-
 
 class AutoMode(AutoAct):
     def run(self):
