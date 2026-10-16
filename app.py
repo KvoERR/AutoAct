@@ -30,7 +30,7 @@ class ExcelReader:
         df = pd.read_excel(self.book_path, sheet_name=sheet_name)
         df = df.iloc[:, 1:]
         df = df.fillna("")
-        return df.to_dict(orient="list")
+        return df.to_dict(orient="records")
 
     def get_features(self, sheet_name: str) -> list:
         df = pd.read_excel(self.book_path, sheet_name=sheet_name)
@@ -66,6 +66,7 @@ def main():
     changes = reader.get_changes(entry["sheet"])
     features = reader.get_features("Функции")
     autoact = entry["mode"](filename, data, templates, changes, features)
+    autoact.run()
 
 
 if __name__ == "__main__":

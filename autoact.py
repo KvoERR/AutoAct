@@ -3,7 +3,6 @@ from docx import Document
 from abc import ABC, abstractmethod
 import pymorphy3
 
-
 morph = pymorphy3.MorphAnalyzer()  
 
 class Functions:
@@ -155,11 +154,20 @@ class Functions:
 
         return f"{last_name} {first_name_initial}{patronymic_initial}"
 
+FEATURES = {
+    "Слово в Р.п.": Functions.to_genitive_word,
+    "Имя в Р.п.": Functions.to_genitive_name,
+    "Имя в Д.п.": Functions.to_inst_name,
+    "Сокращенное имя": Functions.shorten_name,
+    "Сокращённая дата": Functions.shorten_date,
+    "Расширенная дата": Functions.extend_date
+}
+
 class AutoAct(ABC):
     def __init__(self, filename: str, data: str, templates: str, changes: str, features: str) -> dict:
         self.filename = filename
         self.data = data
-        self.template = templates
+        self.templates = templates
         self.changes = changes
         self.features = features
 
@@ -167,91 +175,44 @@ class AutoAct(ABC):
 
     @abstractmethod
     def run(self):
-        ...
-    
-        """Выполнить обработку и вернуть результат."""
-    '''def __init__(self, data_path, template_path, changes, features):
-        self.data_dir = data_path
-        self.template_dir = template_path
-        self.changes = changes
-        self.features = features
-    
-        self.apply_features()
-    
-    def extend_changes(self,name,key,base):
-        "Добавляет измененные features в changes"
-        if name == "Слово в Р.п.":
-            for change in self.changes:
-                change[key]=to_genitive_word(change[base])
-        elif name == "Имя в Р.п.":
-            for change in self.changes:
-                change[key]=to_genitive_name(change[base])
-        elif name == "Имя в Д.п.":
-            for change in self.changes:
-                change[key]=to_inst_name(change[base])
-        elif name == "Сокращенное имя":
-            for change in self.changes:
-                change[key]=shorten_name(change[base])
-        elif name == "Сокращённая дата":
-            for change in self.changes:
-                change[key]=shorten_date(change[base]) 
-        elif name == "Расширенная дата":
-            for change in self.changes:
-                change[key]=extend_date(change[base]) 
+        raise
 
+class ManualMode(AutoAct):
+    def __init__(self, filename, data, templates, changes, features):
+        super().__init__(filename, data, templates, changes, features)
+        self.apply_features()
+        print(changes)
+
+    def extend_changes(self,before_temp,feat,after_temp):
+        for change in self.changes:
+            if change.get(before_temp):
+                change[after_temp]=FEATURES[feat](change[before_temp])
 
     def apply_features(self):
         "Проходимся по features и расширяем changes"
         for feature in self.features:
-            name = feature.get('name')
-            rules = feature.get('data', {})
-            for base, key in rules.items():
-                self.extend_changes(name,key,base)
-                
-
+            before_temp = feature.get('Исходный шаблон')
+            feat = feature.get('Функция')
+            after_temp = feature.get('Обработанный шаблон')
+            self.extend_changes(before_temp,feat,after_temp)
+ 
     def replace_in_doc(self, doc, change):
-        def do_replace(paragraph):
-            for key, value in change.items():
-                if key in paragraph.text:
-                    paragraph.text = paragraph.text.replace(key, str(value))
-
-        for paragraph in doc.paragraphs:
-            do_replace(paragraph)
-
-        for table in doc.tables:
-            for row in table.rows:
-                for cell in row.cells:
-                    for paragraph in cell.paragraphs:
-                        do_replace(paragraph)
+            def do_replace(paragraph):
+                for key, value in change.items():
+                    if key in paragraph.text:
+                        paragraph.text = paragraph.text.replace(key, str(value))
     
-    def table_processing(self):
-        iter = 1
-        for filename in os.listdir(self.template_dir):
-            if filename.endswith('.docx') and not filename.startswith('~$'):
-                filepath = os.path.join(self.template_dir, filename)
-                
-                try:
-                    for change in self.changes:
-                        doc = Document(filepath)
-                        self.replace_in_doc(doc, change)
+            for paragraph in doc.paragraphs:
+                do_replace(paragraph)
+    
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        for paragraph in cell.paragraphs:
+                            do_replace(paragraph)
 
-                        # Генерация имени файла
-                        name_value = change.get('{name}', f"объект_{iter}")
-                        base_name = os.path.splitext(filename)[0]
-                        safe_name = "".join(c for c in name_value if c.isalnum() or c in " _-")[:50]
-                        output_filename = f"{base_name} {safe_name}.docx"
-
-                        doc.save(output_filename)
-                        yield f"✅ {output_filename}"
-                        iter += 1
-
-                except Exception as e:
-                    yield f"❌ Ошибка при обработке {filename}: {str(e)}"
-'''
-
-class ManualMode(AutoAct):
-    def run(self):
-        iter = 1
+    def run(self):     
+        iter = 0
         for template in os.listdir(self.templates):
             if not template.endswith('.docx') or template.startswith('~$'):
                 continue
@@ -260,29 +221,21 @@ class ManualMode(AutoAct):
             base_name = os.path.splitext(template)[0]
 
             for change in self.changes:
-                try:
-                    doc = Document(filepath)
-                    self.replace_in_doc(doc, change)
+                doc = Document(filepath)
+                self.replace_in_doc(doc, change)
 
-                    name_value = change.get(self.filename, '').strip() or f"объект_{iter}"
-                    safe_name = "".join(
-                        c for c in name_value if c.isalnum() or c in " _-"
-                    )[:50].strip() or f"объект_{iter}"
+                name_value = change.get(self.filename, '').strip() or f"объект_{iter+1}"
+                safe_name = "".join(
+                    c for c in name_value if c.isalnum() or c in " _-"
+                )[:50].strip() or f"объект_{iter}"
 
-                    output_filename = f"{base_name} {safe_name}.docx"
-                    doc.save(output_filename)
+                output_filename = f"{base_name} {safe_name}.docx"
+                doc.save(output_filename)
 
-                    yield f"✅ {output_filename}"
-                    iter += 1
+                iter += 1     
 
-                except Exception as e:
-                    yield f"❌ Ошибка ({template}, строка {iter}): {e}"
-                    iter += 1
+
 
 class AutoMode(AutoAct):
     def run(self):
         ...
-
-if __name__ == '__main__':
-    autoact=AutoAct()
-    #autoact.table_processing()

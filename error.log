@@ -1,18 +1,12 @@
 Traceback (most recent call last):
-  File "C:\Xtorage\KvoERR\AutoAct\app.py", line 67, in <module>
+  File "c:\Xtorage\KvoERR\AutoAct\app.py", line 76, in <module>
     main()
-  File "C:\Xtorage\KvoERR\AutoAct\app.py", line 48, in main
-    mode_name = reader.get_mode_name("Программа")
-  File "C:\Xtorage\KvoERR\AutoAct\app.py", line 17, in get_mode_name
-    params = self._read_params(sheet_name)
-  File "C:\Xtorage\KvoERR\AutoAct\app.py", line 13, in _read_params
-    df = pd.read_excel(self.book_path, sheet_name=sheet_name, header=None)
-  File "C:\Xtorage\KvoERR\AutoAct\venv\lib\site-packages\pandas\io\excel\_base.py", line 495, in read_excel
-    io = ExcelFile(
-  File "C:\Xtorage\KvoERR\AutoAct\venv\lib\site-packages\pandas\io\excel\_base.py", line 1550, in __init__
-    ext = inspect_excel_format(
-  File "C:\Xtorage\KvoERR\AutoAct\venv\lib\site-packages\pandas\io\excel\_base.py", line 1402, in inspect_excel_format
-    with get_handle(
-  File "C:\Xtorage\KvoERR\AutoAct\venv\lib\site-packages\pandas\io\common.py", line 882, in get_handle
-    handle = open(handle, ioargs.mode)
-FileNotFoundError: [Errno 2] No such file or directory: 'ui.xlsm'
+  File "c:\Xtorage\KvoERR\AutoAct\app.py", line 68, in main
+    autoact = entry["mode"](filename, data, templates, changes, features)
+  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 183, in __init__
+    self.apply_features()
+  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 197, in apply_features
+    self.extend_changes(before_temp,feat,after_temp)
+  File "c:\Xtorage\KvoERR\AutoAct\autoact.py", line 188, in extend_changes
+    if change[before_temp]:
+KeyError: '{date}'
